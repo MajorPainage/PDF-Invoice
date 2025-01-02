@@ -1,0 +1,310 @@
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid clearfix">
+      <h1>{{ heading_title }}</h1>
+      <div class="pull-right">
+        <button class="btn btn-primary" type="submit" form="form-pdfinvoice" data-toggle="tooltip" title="{{ button_save }}"><i class="fa fa-save"></i></button>
+        {% if languages|length > 1 %}
+          <div class="btn-group" data-toggle="tooltip" title="{{ button_preview }}">
+            <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i class="fa fa-eye"></i> <i class="fa fa-caret-down"></i></button>
+            <ul class="dropdown-menu dropdown-menu-right" role="menu">
+              {% for language in languages if module_pdf_invoice_preview[language.language_id] %}
+                <li><a href="{{ module_pdf_invoice_preview[language.language_id] }}" target="_blank" class="dropdown-item">{{ language.name }}</a></li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% else %}
+          {% for language in languages if module_pdf_invoice_preview[language.language_id] %}
+            <a href="{{ module_pdf_invoice_preview[language.language_id] }}" class="btn btn-info" target="_blank" data-toggle="tooltip" title="{{ button_preview }}"><i class="fa fa-fw fa-eye"></i></a>
+          {% endfor %}
+        {% endif %}
+        <a href="{{ cancel }}" class="btn btn-default" data-toggle="tooltip" title="{{ button_cancel }}"><i class="fa fa-reply"></i></a>
+      </div>
+      <ul class="breadcrumb">
+        {% for breadcrumb in breadcrumbs %}
+          <li class="breadcrumb-item{{ loop.index == breadcrumbs|length ? ' active' }}"><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-pdfinvoice" class="container-fluid">
+    {% if error_warning %}
+      <div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}<button type="button" class="close" data-dismiss="alert">&times;</button></div>
+    {% endif %}
+    {% if success %}
+      <div class="alert alert-success"><i class="fa fa-check-circle"></i> {{ success }}<button type="button" class="close" data-dismiss="alert">&times;</button></div>
+    {% endif %}
+    <div class="panel panel-default">
+      <div class="panel-heading"><i class="fa fa-pencil"></i> {{ heading_module }}</div>
+      <div class="panel-body">
+        <div class="panel-nav-tabs">
+          <ul class="nav nav-tabs" id="tabs-main">
+            <li class="nav-item active"><a href="javascript:void(0)" class="nav-link" data-target="#tab-content" data-toggle="tab" role="tab"><i class="fa fa-font d-xs-none"></i> {{ tab_content }}</a></li>
+            <li class="nav-item"><a href="javascript:void(0)" class="nav-link" data-target="#tab-setting" data-toggle="tab" role="tab"><i class="fa fa-wrench d-xs-none"></i> {{ tab_setting }}</a></li>
+          </ul>
+          <div class="tab-content panel-tab-default">
+            <div id="tab-content" class="tab-pane fade active in">
+              <div class="row">
+                {% if languages|length > 1 %}<div class="col-sm-2">
+                  <div class="panel-nav-tabs">
+                    <ul class="nav nav-pills nav-stacked">
+                      {% for language in languages %}
+                        <li class="nav-item{{ loop.first ? ' active' }}" data-language="{{ language.language_id }}">
+                          <a href="javascript:void(0)" class="nav-link" data-target="#tab-language-{{ language.language_id }}" data-toggle="tab" role="tab">
+                            <img src="language/{{ language.code }}/{{ language.code }}.png" title="{{ language.name }}" /> {{ language.name }}{% if language.default == 1 %} <small>({{ text_default }})</small>{%  endif %}
+                          </a>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                  </div>{% endif %}
+                <div class="{{ languages|length > 1 ? 'col-sm-10' : 'col-xs-12' }}">
+                  <div class="tab-content">
+                    {% for language in languages %}
+                      <div id="tab-language-{{ language.language_id }}" class="tab-pane fade{% if loop.first %} active in{% endif %}" data-language="{{ language.language_id }}">
+                        <div class="form-group">
+                          <label class="control-label" for="pdf-invoice-title-{{ language.language_id }}">{{ entry_title }}</label>
+                          <input type="text" class="form-control" name="module_pdf_invoice_title_{{ language.language_id }}" id="pdf-invoice-title-{{ language.language_id }}" value="{{ attribute(_context, 'module_pdf_invoice_title_' ~ language.language_id) }}" />
+                        </div>
+                        <h4>{{ text_help_each_page }}</h4>
+                         <div class="form-group">
+                          <label class="control-label" for="pdf-invoice-header-{{ language.language_id }}">{{ entry_header }}</label>
+                          <textarea class="form-control wysiwyg_editor" name="module_pdf_invoice_header_{{ language.language_id }}" id="pdf-invoice-header-{{ language.language_id }}">{{ attribute(_context, 'module_pdf_invoice_header_' ~ language.language_id) }}</textarea>
+                        </div>
+                        <div class="form-group">
+                          <label class="control-label" for="pdf-invoice-footer-{{ language.language_id }}">{{ entry_footer }}</label>
+                          <textarea class="form-control wysiwyg_editor" name="module_pdf_invoice_footer_{{ language.language_id }}" id="pdf-invoice-footer-{{ language.language_id }}">{{ attribute(_context, 'module_pdf_invoice_footer_' ~ language.language_id) }}</textarea>
+                        </div>
+                        <hr />
+                        <h4>{{  text_help_invoice_after }}</h4>
+                        <div class="form-group">
+                          <label class="control-label" for="pdf-invoice-after-{{ language.language_id }}">{{ entry_before }}</label>
+                          <textarea class="form-control wysiwyg_editor" name="module_pdf_invoice_before_{{ language.language_id }}" id="pdf-invoice-before-{{ language.language_id }}">{{ attribute(_context, 'module_pdf_invoice_before_' ~ language.language_id) }}</textarea>
+                        </div>
+                        <div class="form-group">
+                          <label class="control-label" for="pdf-invoice-after-{{ language.language_id }}">{{ entry_after }}</label>
+                          <textarea class="form-control wysiwyg_editor" name="module_pdf_invoice_after_{{ language.language_id }}" id="pdf-invoice-after-{{ language.language_id }}">{{ attribute(_context, 'module_pdf_invoice_after_' ~ language.language_id) }}</textarea>
+                        </div>
+                        <hr />
+                        <h4>{{ text_help_extra_page }}</h4>
+                        <div class="form-group">
+                          <label class="control-label" for="pdf-invoice-prepend-{{ language.language_id }}">{{ entry_prepend }}</label>
+                          <textarea class="form-control wysiwyg_editor" name="module_pdf_invoice_prepend_{{ language.language_id }}" id="pdf-invoice-prepend-{{ language.language_id }}">{{ attribute(_context, 'module_pdf_invoice_prepend_' ~ language.language_id) }}</textarea>
+                        </div>
+                        <div class="form-group">
+                          <label class="control-label" for="pdf-invoice-append-{{ language.language_id }}">{{ entry_append }}</label>
+                          <textarea class="form-control wysiwyg_editor" name="module_pdf_invoice_append_{{ language.language_id }}" id="pdf-invoice-append-{{ language.language_id }}">{{ attribute(_context, 'module_pdf_invoice_append_' ~ language.language_id) }}</textarea>
+                        </div>
+
+                        <div class="form-group row">
+                          <label class="col-lg-2 control-label" for="pdf-invoice-rtl-{{ language.language_id }}">{{ entry_direction }}</label>
+                          <div class="col-lg-10">
+                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                              <label class="btn btn-default danger {{ attribute(_context, 'module_pdf_invoice_rtl_' ~ language.language_id) == 0 ? ' active' }}">
+                                <input type="radio" name="module_pdf_invoice_rtl_{{ language.language_id }}" value="0"{{ attribute(_context, 'module_pdf_invoice_rtl_' ~ language.language_id) == 0 ? ' checked="checked" ' }} />{{ text_ltr }}
+                              </label>
+                              <label class="btn btn-default success {{ attribute(_context, 'module_pdf_invoice_rtl_' ~ language.language_id) == 1 ? ' active' }}">
+                                <input type="radio" name="module_pdf_invoice_rtl_{{ language.language_id }}" value="1"{{ attribute(_context, 'module_pdf_invoice_rtl_' ~ language.language_id) == 1 ? ' checked="checked" ' }} />{{ text_rtl }}
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="tab-setting" class="tab-pane fade">
+              <div class="form-horizontal">
+                <div class="form-group row">
+                  <label class="col-sm-2 control-label" for="input-status">{{ entry_status }}</label>
+                  <div class="col-sm-10">
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                      <label class="btn btn-default danger {{ not module_pdf_invoice_status ? ' active' }}" data-toggle="tooltip" title="{{ text_disabled }}">
+                        <input type="radio" name="module_pdf_invoice_status" value="0"{{ not module_pdf_invoice_status ? ' checked="checked" ' }}/><i class="fa fa-fw fa-times"></i>
+                      </label>
+                      <label class="btn btn-default success {{ module_pdf_invoice_status ? ' active' }}" data-toggle="tooltip" title="{{ text_enabled }}">
+                        <input type="radio" name="module_pdf_invoice_status" value="1"{{ module_pdf_invoice_status ? ' checked="checked" ' }}/><i class="fa fa-fw fa-check"></i>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group row">
+                  <label class="col-sm-2 control-label" for="input-paging">{{ entry_paging }}</label>
+                  <div class="col-sm-10">
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                      <label class="btn btn-default danger {{ not module_pdf_invoice_paging ? ' active' }}" data-toggle="tooltip" title="{{ text_disabled }}">
+                        <input type="radio" name="module_pdf_invoice_paging" value="0"{{ not module_pdf_invoice_paging ? ' checked="checked" ' }}/><i class="fa fa-fw fa-times"></i>
+                      </label>
+                      <label class="btn btn-default success {{ module_pdf_invoice_paging ? ' active' }}" data-toggle="tooltip" title="{{ text_enabled }}">
+                        <input type="radio" name="module_pdf_invoice_paging" value="1"{{ module_pdf_invoice_paging ? ' checked="checked" ' }}/><i class="fa fa-fw fa-check"></i>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group row">
+                  <label class="col-sm-2 control-label" for="pdf-invoice-color">{{ entry_color }}</label>
+                  <div class="col-sm-4">
+                    <div class="input-group input-colorpicker colorpicker-component">
+                      <span class="input-group-addon add-on"><span class="input-group-text"><i{% if module_pdf_invoice_color %} style="background-color:{{ module_pdf_invoice_color }};"{% endif %}></i></span></span>
+                      <input class="form-control" type="text" id="module_pdf_invoice_color" name="module_pdf_invoice_color" value="{{ module_pdf_invoice_color }}" autocomplete="off" />
+                    </div>
+                  </div>
+                  <label class="col-sm-2 control-label" for="pdf-invoice-border-color">{{ entry_border }}</label>
+                  <div class="col-sm-4">
+                    <div class="input-group input-colorpicker colorpicker-component">
+                      <span class="input-group-addon add-on"><span class="input-group-text"><i{% if module_pdf_invoice_border_color %} style="background-color:{{ module_pdf_invoice_border_color }};"{% endif %}></i></span></span>
+                      <input class="form-control" type="text" id="module_pdf_invoice_border_color" name="module_pdf_invoice_border_color" value="{{ module_pdf_invoice_border_color }}" autocomplete="off" />
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group row">
+                  <label class="col-sm-2 control-label" for="pdf-invoice-font">{{ entry_font }}</label>
+                  <div class="col-sm-4">
+                    <select class="form-control" id="pdf-invoice-font" name="module_pdf_invoice_font">
+                      <option value=""{{ module_pdf_invoice_font == '' ? ' selected="selected"' }}>Helvetica (default)</option>
+                      {% if fonts is not empty and fonts is iterable %}
+                        {% for font in fonts|keys if font != 'helvetica' %}
+                          <option value="{{ font }}"{{ module_pdf_invoice_font == font ? ' selected="selected" ' }}>{{ font }}</option>
+                        {% endfor %}
+                      {% endif %}
+                    </select>
+                    {% if fonts is not empty and fonts|length <= 2 %}
+                    <div class="help-block">{{ text_help_fonts_download }}</div>
+                    {% endif %}
+                  </div>
+                  <label class="col-sm-2 control-label" for="pdf-invoice-font-size">{{ entry_font_size }}</label>
+                  <div class="col-sm-4">
+                    <input class="form-control" type="text" id="pdf-invoice-font-size" name="module_pdf_invoice_font_size" value="{{ module_pdf_invoice_font_size }}" autocomplete="off" />
+                  </div>
+                </div>
+                <div class="form-group row">
+                  <label class="col-sm-2 control-label" for="pdf-invoice-logo">{{ entry_logo }}</label>
+                  <div class="col-sm-4">
+                    <a href="javascript:void(0)" id="thumb-logo" data-toggle="image"><img class="img-thumbnail" src="{{ logo_thumb }}" alt="" data-placeholder="{{ placeholder }}"/></a>
+                    <input type="hidden" name="module_pdf_invoice_logo" value="{{ module_pdf_invoice_logo }}" id="input-logo"/>
+                    {% if error_logo is not empty %}<div class="text-danger">{{ error_logo }}</div>{% endif %}
+                  </div>
+                  <div class="col-sm-6">
+                    <div class="form-group row">
+                      <label class="col-sm-4 control-label" for="pdf-invoice-logo-width">{{ entry_width }}</label>
+                      <div class="col-sm-8">
+                        <input class="form-control" type="text" id="module_pdf_invoice_logo_width" name="module_pdf_invoice_logo_width" value="{{ module_pdf_invoice_logo_width }}" autocomplete="off" />
+                      </div>
+                    </div>
+                    <div class="form-group row">
+                      <label class="col-sm-4 control-label" for="pdf-invoice-logo-height">{{ entry_height }}</label>
+                      <div class="col-sm-8">
+                        <input class="form-control" type="text" id="module_pdf_invoice_logo_height" name="module_pdf_invoice_logo_height" value="{{ module_pdf_invoice_logo_height }}" autocomplete="off" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group row">
+                  <label class="col-sm-2 control-label" for="pdf-invoice-order-product-image">{{ entry_image }}</label>
+                  <div class="col-sm-4">
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                      <label class="btn btn-default danger {{ not module_pdf_invoice_order_image ? ' active' }}" data-toggle="tooltip" title="{{ text_no }}">
+                        <input type="radio" name="module_pdf_invoice_order_image" value="0"{{ not module_pdf_invoice_order_image ? ' checked="checked" ' }}/><i class="fa fa-fw fa-times"></i>
+                      </label>
+                      <label class="btn btn-default success {{ module_pdf_invoice_order_image ? ' active' }}" data-toggle="tooltip" title="{{ text_yes }}">
+                        <input type="radio" name="module_pdf_invoice_order_image" value="1"{{ module_pdf_invoice_order_image ? ' checked="checked" ' }}/><i class="fa fa-fw fa-check"></i>
+                      </label>
+                    </div>
+                  </div>
+                  <div class="col-sm-6">
+                    <div class="form-group row">
+                      <label class="col-sm-4 control-label" for="pdf-invoice-order_image-width">{{ entry_width }}</label>
+                      <div class="col-sm-8">
+                        <input class="form-control" type="text" id="module_pdf_invoice_order_image_width" name="module_pdf_invoice_order_image_width" value="{{ module_pdf_invoice_order_image_width }}" min="50" max="100" autocomplete="off" />
+                      </div>
+                    </div>
+                    <div class="form-group row">
+                      <label class="col-sm-4 control-label" for="pdf-invoice-order_image-height">{{ entry_height }}</label>
+                      <div class="col-sm-8">
+                        <input class="form-control" type="text" id="module_pdf_invoice_order_image_height" name="module_pdf_invoice_order_image_height" value="{{ module_pdf_invoice_order_image_height }}" min="50" max="100" autocomplete="off" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group row">
+                  <label class="col-sm-2 control-label" for="pdf-invoice-barcode">{{ entry_barcode }}</label>
+                  <div class="col-sm-10">
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                      <label class="btn btn-default danger {{ not module_pdf_invoice_barcode ? ' active' }}" data-toggle="tooltip" title="{{ text_no }}">
+                        <input type="radio" name="module_pdf_invoice_barcode" value="0"{{ not module_pdf_invoice_barcode ? ' checked="checked" ' }}/><i class="fa fa-fw fa-times"></i>
+                      </label>
+                      <label class="btn btn-default success {{ module_pdf_invoice_barcode ? ' active' }}" data-toggle="tooltip" title="{{ text_yes }}">
+                        <input type="radio" name="module_pdf_invoice_barcode" value="1"{{ module_pdf_invoice_barcode ? ' checked="checked" ' }}/><i class="fa fa-fw fa-check"></i>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <hr />
+                <div class="form-group row">
+                  <label class="col-sm-2 control-label" for="pdf-invoice-attach">{{ entry_attach }}</label>
+                  <div class="col-sm-4">
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                      <label class="btn btn-default danger {{ not module_pdf_invoice_attach ? ' active' }}" data-toggle="tooltip" title="{{ text_no }}">
+                        <input type="radio" name="module_pdf_invoice_attach" value="0"{{ not module_pdf_invoice_attach ? ' checked="checked" ' }}/><i class="fa fa-fw fa-times"></i>
+                      </label>
+                      <label class="btn btn-default success {{ module_pdf_invoice_attach ? ' active' }}" data-toggle="tooltip" title="{{ text_yes }}">
+                        <input type="radio" name="module_pdf_invoice_attach" value="1"{{ module_pdf_invoice_attach ? ' checked="checked" ' }}/><i class="fa fa-fw fa-check"></i>
+                      </label>
+                    </div>
+                  </div>
+                  <label class="col-sm-2 control-label" for="pdf-invoice-order-complete">{{ entry_complete }}</label>
+                  <div class="col-sm-4">
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                      <label class="btn btn-default danger {{ not module_pdf_invoice_order_complete ? ' active' }}" data-toggle="tooltip" title="{{ text_no }}">
+                        <input type="radio" name="module_pdf_invoice_order_complete" value="0"{{ not module_pdf_invoice_order_complete ? ' checked="checked" ' }}/><i class="fa fa-fw fa-times"></i>
+                      </label>
+                      <label class="btn btn-default success {{ module_pdf_invoice_order_complete ? ' active' }}" data-toggle="tooltip" title="{{ text_yes }}">
+                        <input type="radio" name="module_pdf_invoice_order_complete" value="1"{{ module_pdf_invoice_order_complete ? ' checked="checked" ' }}/><i class="fa fa-fw fa-check"></i>
+                      </label>
+                    </div>
+                    <span class="help-inline">{{ text_help_complete }}</span>
+                  </div>
+                </div>
+                <div class="form-group row">
+                  <label class="col-sm-2 control-label" for="pdf-invoice-admin">{{ entry_admin }}</label>
+                  <div class="col-sm-4">
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                      <label class="btn btn-default danger {{ not module_pdf_invoice_admin ? ' active' }}" data-toggle="tooltip" title="{{ text_no }}">
+                        <input type="radio" name="module_pdf_invoice_admin" value="0"{{ not module_pdf_invoice_admin ? ' checked="checked" ' }}/><i class="fa fa-fw fa-times"></i>
+                      </label>
+                      <label class="btn btn-default success {{ module_pdf_invoice_admin ? ' active' }}" data-toggle="tooltip" title="{{ text_yes }}">
+                        <input type="radio" name="module_pdf_invoice_admin" value="1"{{ module_pdf_invoice_admin ? ' checked="checked" ' }}/><i class="fa fa-fw fa-check"></i>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group row">
+                  <label class="col-sm-2 control-label" for="pdf-invoice-download">{{ entry_download }}</label>
+                  <div class="col-sm-10">
+                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                      <label class="btn btn-default danger {{ not module_pdf_invoice_download ? ' active' }}" data-toggle="tooltip" title="{{ text_no }}">
+                        <input type="radio" name="module_pdf_invoice_download" value="0"{{ not module_pdf_invoice_download ? ' checked="checked" ' }}/><i class="fa fa-fw fa-times"></i>
+                      </label>
+                      <label class="btn btn-default success {{ module_pdf_invoice_download ? ' active' }}" data-toggle="tooltip" title="{{ text_yes }}">
+                        <input type="radio" name="module_pdf_invoice_download" value="1"{{ module_pdf_invoice_download ? ' checked="checked" ' }}/><i class="fa fa-fw fa-check"></i>
+                      </label>
+                    </div>
+                    <span class="help-inline">{{ text_help_download }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <blockquote class="well text-center"><p>To generate the PDF we used TCPDF library by Nicola Asuni - Tecnick.com <a href="http://www.tcpdf.org" target="_blank">www.tcpdf.org</a></p>
+              <footer>If you like it please feel free to <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=paypal%40tecnick%2ecom&lc=US&no_note=0&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHostedGuest" target="_blank"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" border="0" alt="PayPal - The safer, easier way to pay online!" style="vertical-align: middle;" /></a> a small amount of money to secure the future of this free library.</footer></blockquote>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{{ footer }}

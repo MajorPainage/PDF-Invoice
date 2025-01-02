@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+    <name>PDF Invoice</name>
+    <code>pdf_invoice</code>
+    <version>3.0.3.30</version>
+    <author>opencart-templates</author>
+    <link><![CDATA[https://www.opencart.com/index.php?route=marketplace/extension/info&extension_id=31450&filter_member=opencart-templates]]></link>
+
+    <file path="admin/language/*/sale/order.php">
+        <operation>
+            <search index="0"><![CDATA[<?php]]></search>
+            <add position="after"><![CDATA[
+$_['entry_order_summary'] = '<span title="Include ordered products table in email" data-toggle="tooltip">Order Summary</span>';
+$_['entry_pdf_attach']    = 'Attach PDF Invoice';
+$_['entry_template']      = 'Email Template:';
+$_['button_pdf_attach']   = 'Download Invoice';]]></add>
+        </operation>
+    </file>
+
+    <file path="catalog/controller/account/order.php">
+        <operation>
+            <search index="0"><![CDATA[$data['orders'] = array]]></search>
+            <add position="before"><![CDATA[				$this->language->load('extension/module/pdf_invoice');
+
+			$this->load->model('account/order');
+			]]></add>
+        </operation>
+        <operation>
+            <search index="0"><![CDATA[$data['orders'][] = array(]]></search>
+            <add position="before"><![CDATA[			$order_info = $this->model_account_order->getOrder($result['order_id']);
+
+			if ($this->config->get('module_pdf_invoice_status') && $this->config->get('module_pdf_invoice_download') && (!$this->config->get('module_pdf_invoice_order_complete') || in_array($order_info['order_status_id'], $this->config->get('config_complete_status')))) {
+				$download_invoice = $this->url->link('extension/module/pdf_invoice/generate', 'order_id=' . $result['order_id']);
+			} else {
+				$download_invoice = '';
+			}
+			]]></add>
+        </operation>
+        <operation>
+            <search index="0"><![CDATA[$data['orders'][] = array(]]></search>
+            <add position="after"><![CDATA[				'download_invoice' => $download_invoice,]]></add>
+        </operation>
+        <operation error="skip">
+            <search index="0"><![CDATA[$result['notify'] ? nl2br($result['comment']) : '']]></search>
+            <add position="replace"><![CDATA[$result['notify'] ? html_entity_decode($result['comment'], ENT_QUOTES, 'UTF-8') : '']]></add>
+        </operation>
+        <operation>
+            <search index="0"><![CDATA[$data['continue'] = $this->url->link('account/order']]></search>
+            <add position="after"><![CDATA[
+			if ($this->config->get('module_pdf_invoice_status') && $this->config->get('module_pdf_invoice_download') && (!$this->config->get('module_pdf_invoice_order_complete') || in_array($order_info['order_status_id'], $this->config->get('config_complete_status')))) {
+				$this->language->load('extension/module/pdf_invoice');
+
+				$data['button_invoice'] = $this->language->get('button_invoice');
+
+				$data['download_invoice'] = $this->url->link('extension/module/pdf_invoice/generate', 'order_id='.$order_id, true);
+			}]]></add>
+        </operation>
+    </file>
+
+    <file path="catalog/view/theme/*/template/account/order_list.twig">
+        <operation>
+            <search index="0"><![CDATA[<a href="{{ order.view }}"]]></search>
+            <add position="replace"><![CDATA[{% if order.download_invoice %}<a href="{{ order.download_invoice }}" target="_blank" class="btn btn-light" data-toggle="tooltip" title="{{ button_invoice }}"><i class="fa fa-file-pdf-o"></i></a> {% endif %}<a href="{{ order.view }}"]]></add>
+        </operation>
+    </file>
+
+    <file path="catalog/view/theme/*/template/account/order_info.twig">
+        <operation>
+            <search><![CDATA[<a href="{{ continue }}"]]></search>
+            <add position="before"><![CDATA[
+			{% if download_invoice %}<div class="pull-left"><a href="{{ download_invoice }}" target="_blank" class="btn btn-default"><i class="fa fa-file-pdf-o"></i> {{ button_invoice }}</a></div>{% endif %}]]></add>
+        </operation>
+    </file>
+
+    <file path="catalog/controller/mail/order.php">
+        <operation info="order.confirm">
+            <search index="0"><![CDATA[$mail->send();]]></search>
+            <add position="replace"><![CDATA[
+		if ($this->config->get('module_pdf_invoice_status') && $this->config->get('module_pdf_invoice_attach') && !isset($this->request->post['attach_invoice_pdf']) && (!$this->config->get('module_pdf_invoice_order_complete') || in_array($order_status_id, $this->config->get('config_complete_status')))) {
+			$this->load->model('extension/module/pdf_invoice');
+
+			$pdf_invoice = $this->model_extension_module_pdf_invoice->getInvoice(array(array_merge($order_info, array('order_status_id' => $order_status_id))), true);
+
+			if ($pdf_invoice) {
+				$mail->addAttachment($pdf_invoice);
+			}
+		}
+
+		$mail->send();
+
+		if (isset($pdf_invoice) && file_exists($pdf_invoice)) {
+			unlink($pdf_invoice);
+		}]]></add>
+        </operation>
+        <operation info="order.update">
+            <search index="1"><![CDATA[$mail->send();]]></search>
+            <add position="replace"><![CDATA[
+		// order.update attach pdf invoice
+		if (!isset($pdf_invoice) && $this->config->get('module_pdf_invoice_status') && (!isset($this->request->post['attach_invoice_pdf']) || $this->request->post['attach_invoice_pdf'])) {
+			$this->load->model('extension/module/pdf_invoice');
+
+			$pdf_invoice = $this->model_extension_module_pdf_invoice->getInvoice(array(array_merge($order_info, array('order_status_id' => $order_status_id))), true);
+
+			if ($pdf_invoice) {
+				$mail->addAttachment($pdf_invoice);
+			}
+		}
+
+		$mail->send();
+
+		if (isset($pdf_invoice) && file_exists($pdf_invoice)) {
+			unlink($pdf_invoice);
+		}]]></add>
+        </operation>
+        <operation info="order.admin">
+            <search index="2"><![CDATA[$mail->send();]]></search>
+            <add position="replace"><![CDATA[
+		if ($this->config->get('module_pdf_invoice_status') && $this->config->get('module_pdf_invoice_admin') && !isset($this->request->post['attach_invoice_pdf'])) {
+			$this->load->model('extension/module/pdf_invoice');
+
+			$pdf_invoice = $this->model_extension_module_pdf_invoice->getInvoice(array(array_merge($order_info, array('order_status_id' => $order_status_id))), true);
+
+			if ($pdf_invoice) {
+				$mail->addAttachment($pdf_invoice);
+			}
+		}
+
+		$mail->send();
+
+		if (isset($pdf_invoice) && file_exists($pdf_invoice)) {
+			unlink($pdf_invoice);
+		}]]></add>
+        </operation>
+    </file>
+
+    <file path="admin/controller/sale/order.php">
+        <operation>
+            <search index="0"><![CDATA[$data['text_ip_add'] = ]]></search>
+            <add position="after"><![CDATA[
+		if ($this->config->get('module_pdf_invoice_status')) {
+			$data['download_pdf_invoice'] = $this->url->link('extension/module/pdf_invoice/generate', 'user_token=' . $this->session->data['user_token'] . '&order_id=' . (int)$this->request->get['order_id'], true);
+		}]]></add>
+        </operation>
+        <operation>
+            <search index="0"><![CDATA[$data['invoice'] = $this->url->link('sale/order/invoice', 'user_token=' . $this->session->data['user_token']]]></search>
+            <add position="after"><![CDATA[
+            if ($this->config->get('module_pdf_invoice_status')) {
+				$data['download_pdf_invoices'] = $this->url->link('extension/module/pdf_invoice/generate', 'user_token=' . $this->session->data['user_token']);
+			}]]></add>
+        </operation>
+    </file>
+
+    <file path="admin/view/template/sale/order_list.twig">
+        <operation>
+            <search index="0"><![CDATA[<button type="submit" id="button-invoice"]]></search>
+            <add position="before"><![CDATA[ {% if download_pdf_invoices %}<button type="button" data-href="{{ download_pdf_invoices }}" target="_blank" data-toggle="tooltip" title="{{ button_pdf_attach }}" class="btn btn-info" id="button-pdf-invoice"><i class="fa fa-file-pdf-o"></i></button>{% endif %} ]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[$('#button-shipping, #button-invoice').prop('disabled', true);]]></search>
+            <add position="after"><![CDATA[$('#button-pdf-invoice').prop('disabled', true);]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[$('#button-invoice').prop('disabled', false);]]></search>
+            <add position="after"><![CDATA[$('#button-pdf-invoice').prop('disabled', false);]]></add>
+        </operation>
+	    <operation>
+            <search><![CDATA[{{ footer }}]]></search>
+            <add position="before"><![CDATA[<script type="text/javascript"><!--
+(function($){
+  $(document).ready(function(){
+    $('#button-pdf-invoice').click(function(){
+      if ($(this).prop("disabled") == false) {
+        var $selected = $("input[name='selected[]']:checked");
+        if ($selected.length) {
+          window.open($(this).data('href') + '&' + $selected.serialize(), '_blank');
+        }
+      }
+      return false;
+    });
+  });
+})(jQuery);
+//--></script>]]></add>
+        </operation>
+    </file>
+
+    <file path="admin/view/template/sale/order_info.twig">
+        <operation>
+            <search index="0"><![CDATA[<a href="{{ shipping }}"]]></search>
+            <add position="replace"><![CDATA[{% if download_pdf_invoice %}<a href="{{ download_pdf_invoice }}" target="_blank" data-toggle="tooltip" title="{{ button_pdf_attach }}" class="btn btn-info"><i class="fa fa-file-pdf-o"></i></a>{% endif %} <a href="{{ shipping }}"]]></add>
+        </operation>
+        <operation>
+            <search index="0"><![CDATA[id="button-history"]]></search>
+            <add position="before" offset="1"><![CDATA[              <div id="form-group-pdf-invoice" class="form-group row" style="display:none;">
+				<label class="col-sm-2 col-form-label">{{ entry_pdf_attach }}</label>
+                <div class="col-sm-10">
+               	  <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                     <label class="btn btn-default"><input type="radio" name="attach_invoice_pdf" value="1"> Yes</label>
+                     <label class="btn btn-default active"><input type="radio" name="attach_invoice_pdf" value="0" checked="checked"> No</label>
+                  </div>
+                </div>
+              </div>]]></add>
+        </operation>
+        <operation>
+            <search index="0"><![CDATA['&notify=' +]]></search>
+            <add position="replace"><![CDATA['&attach_invoice_pdf=' + ($('input[name=\'attach_invoice_pdf\'][value=1]:checked').length ? '1' : '0') + '&notify=' + ]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[$('#history').load('index.php?route=sale/order/history]]></search>
+            <add position="before"><![CDATA[
+			$('input[name=attach_invoice_pdf][value=1]').prop('checked', false).parent().removeClass('active');
+			$('input[name=attach_invoice_pdf][value=0]').prop('checked', true).parent().addClass('active');
+
+            $('#form-group-pdf-invoice').hide();
+		]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[{{ footer }}]]></search>
+            <add position="before"><![CDATA[<script type="text/javascript"><!--
+(function($){
+  $(document).ready(function(){
+    $('input[name=notify]').change(function(){
+      if ($(this).prop("checked")) {
+        $('#form-group-pdf-invoice').show();
+      } else {
+        $('#form-group-pdf-invoice').hide();
+      }
+    });
+  });
+})(jQuery);
+//--></script>]]></add>
+        </operation>
+    </file>
+</modification>
